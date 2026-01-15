@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Application Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+
+<style>
+/* ==================== THEME VARIABLES ==================== */
+:root{
+  --bg:#020617;
+  --card:#0f172a;
+  --panel:#020617;
+  --text:#e5e7eb;
+  --border:#1e293b;
+  --accent:#6366f1;
+}
+body.light{
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --panel:#f1f5f9;
+  --text:#0f172a;
+  --border:#e2e8f0;
+  --accent:#4f46e5;
+}
+
+/* ==================== BASIC STYLING ==================== */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  transition:background .6s,color .6s;
+  overflow-x:hidden;
+}
+.view{
+  min-height:100vh;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  padding:24px;
+}
+.view.active{display:flex}
+.card{
+  background:var(--card);
+  padding:28px;
+  border-radius:22px;
+  width:100%;
+  max-width:760px;
+  box-shadow:0 40px 90px rgba(0,0,0,.35);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  transition:background .6s, transform .6s, box-shadow .6s;
+}
+input,select,textarea,button{
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  font-size:14px;
+}
+input,select,textarea{
+  background:var(--panel);
+  color:var(--text);
+  box-shadow:inset 0 0 0 1px var(--border);
+  transition:background .6s,color .6s,box-shadow .6s;
+}
+button{
+  background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+button.secondary{
+  background:var(--panel);
+  color:var(--text);
+}
+.app-card{
+  background:var(--panel);
+  padding:14px;
+  border-radius:16px;
+  box-shadow:inset 0 0 0 1px var(--border);
+  transition:background .6s,box-shadow .6s;
+}
+.badge{
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+}
+.Pending{background:#f59e0b}
+.Approved{background:#10b981}
+.Rejected{background:#ef4444}
+.audit{
+  background:var(--panel);
+  padding:12px;
+  border-radius:12px;
+  max-height:200px;
+  overflow:auto;
+}
+.loader{
+  width:22px;height:22px;border:3px solid #fff4;
+  border-top-color:white;border-radius:50%;
+  animation:spin 1s linear infinite;margin:auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ==================== THEME TOGGLE ==================== */
+.theme-toggle{
+  position:fixed;
+  top:20px;
+  right:20px;
+  width:56px;
+  height:28px;
+  border-radius:999px;
+  background:var(--panel);
+  box-shadow:inset 0 0 0 1px var(--border);
+  cursor:pointer;
+  padding:4px;
+  display:flex;
+  align-items:center;
+  z-index:999;
+}
+.theme-knob{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--accent);
+  transition:transform .5s;
+}
+body.light .theme-knob{transform:translateX(28px);}
+</style>
+</head>
+<body>
+
+<!-- THEME TOGGLE -->
+<div class="theme-toggle" onclick="toggleTheme()">
+  <div class="theme-knob"></div>
+</div>
+
+<!-- HOME -->
+<div id="home" class="view active">
+  <div class="card">
+    <h2>Application Portal</h2>
+    <button onclick="go('userLogin')">User Login</button>
+    <div>Admin: ALT+A · Owner: ALT+O</div>
+  </div>
+</div>
+
+<!-- USER LOGIN -->
+<div id="userLogin" class="view">
+  <div class="card">
+    <h3>User Login</h3>
+    <input id="userEmail" placeholder="Email">
+    <button onclick="fakeLogin(userLogin)">Login</button>
+    <button class="secondary" onclick="go('home')">Back</button>
+  </div>
+</div>
+
+<!-- USER PANEL -->
+<div id="userPanel" class="view">
+  <div class="card">
+    <h3>Application</h3>
+    <div id="userQuestions"></div>
+    <button onclick="submitApp()">Submit</button>
+    <button class="secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="view">
+  <div class="card">
+    <h3>Admin Login</h3>
+    <input id="adminEmail" placeholder="Email">
+    <input id="adminPass" type="password">
+    <button onclick="fakeLogin(adminLogin)">Login</button>
+    <button class="secondary" onclick="go('home')">Back</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="view">
+  <div class="card">
+    <h3>Admin Panel</h3>
+    <input id="qText" placeholder="Question text">
+    <select id="qType">
+      <option value="text">Text</option>
+      <option value="textarea">Textarea</option>
+    </select>
+    <button onclick="addQuestion()">Add Question</button>
+
+    <hr>
+    <h3>Questions</h3>
+    <div id="adminQuestions"></div>
+
+    <hr>
+    <h3>Applications</h3>
+    <button onclick="exportApps()">Export</button>
+    <div id="applications"></div>
+
+    <hr>
+    <h3>Audit Log</h3>
+    <div id="audit" class="audit"></div>
+
+    <button class="secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- OWNER LOGIN -->
+<div id="ownerLogin" class="view">
+  <div class="card">
+    <h3>Owner Login</h3>
+    <input id="ownerEmail">
+    <input id="ownerPass" type="password">
+    <button onclick="fakeLogin(ownerLogin)">Login</button>
+    <button class="secondary" onclick="go('home')">Back</button>
+  </div>
+</div>
+
+<!-- OWNER PANEL -->
+<div id="ownerPanel" class="view">
+  <div class="card">
+    <h3>Applications</h3>
+    <button onclick="exportApps()">Export</button>
+    <div id="ownerApps"></div>
+    <div id="auditOwner" class="audit"></div>
+    <button class="secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<script>
+/* STORAGE INIT */
+const db={
+  get:k=>JSON.parse(localStorage.getItem(k)),
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+if(!db.get("questions"))db.set("questions",[]);
+if(!db.get("applications"))db.set("applications",[]);
+if(!db.get("audit"))db.set("audit",[]);
+if(!db.get("admins"))db.set("admins",[{"email":"admin@example.com","pass":"admin123"}]);
+if(!db.get("owner"))db.set("owner",{email:"owner@example.com",pass:"owner123"});
+
+let currentUser="", role="";
+
+/* NAV */
+function go(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  gsap.fromTo("#"+id+" .card",{opacity:0,y:20},{opacity:1,y:0,duration:.3});
+}
+function logout(){location.reload()}
+
+/* THEME */
+if(localStorage.theme==="light")document.body.classList.add("light");
+function toggleTheme(){
+  document.body.classList.toggle("light");
+  localStorage.theme=document.body.classList.contains("light")?"light":"dark";
+  gsap.fromTo(".card",{x:0},{x:20,yoyo:true,repeat:1,duration:.15});
+}
+
+/* FAKE LOGIN LOADER */
+function fakeLogin(fn){
+  const btn = event.target;
+  btn.disabled=true;
+  const oldHTML = btn.innerHTML;
+  btn.innerHTML='<div class="loader"></div>';
+  setTimeout(()=>{
+    try{ fn(); } catch(e){ alert(e.message); }
+    btn.disabled=false;
+    btn.innerHTML=oldHTML;
+  },900);
+}
+
+/* AUDIT LOG */
+function log(msg){
+  const a=db.get("audit");
+  a.unshift(new Date().toLocaleTimeString()+" — "+msg);
+  db.set("audit",a);
+}
+
+/* USER */
+function userLogin(){
+  currentUser=userEmail.value;
+  role="user";
+  log("User logged in: "+currentUser);
+  go("userPanel");
+  renderUser();
+}
+function renderUser(){
+  userQuestions.innerHTML="";
+  db.get("questions").forEach((q,i)=>{
+    userQuestions.innerHTML+=`
+      <div class="app-card">
+        <b>${q.text}</b>
+        ${q.type==="textarea"?`<textarea id="a${i}"></textarea>`:`<input id="a${i}">`}
+      </div>`;
+  });
+}
+function submitApp(){
+  const answers=db.get("questions").map((q,i)=>({q:q.text,a:document.getElementById("a"+i).value}));
+  const apps=db.get("applications");
+  apps.push({user:currentUser,answers,status:"Pending"});
+  db.set("applications",apps);
+  log("Application submitted by "+currentUser);
+  alert("Submitted");
+  renderAdmin();
+}
+
+/* ADMIN */
+function adminLogin(){
+  const ok=db.get("admins").find(a=>a.email===adminEmail.value && a.pass===adminPass.value);
+  if(!ok)return alert("Invalid admin");
+  role="admin";
+  log("Admin logged in: "+ok.email);
+  go("adminPanel");
+  renderAdmin();
+}
+function renderAdmin(){
+  adminQuestions.innerHTML="";
+  db.get("questions").forEach((q,i)=>{adminQuestions.innerHTML+=`<div>${q.text}</div>`});
+  renderApps(applications,true);
+  audit.innerHTML=db.get("audit").join("<br>");
+}
+function addQuestion(){
+  const qs=db.get("questions");
+  qs.push({text:qText.value,type:qType.value});
+  db.set("questions",qs);
+  log("Question added: "+qText.value);
+  qText.value="";
+  renderAdmin();
+}
+
+/* OWNER */
+function ownerLogin(){
+  const o=db.get("owner");
+  if(ownerEmail.value!==o.email || ownerPass.value!==o.pass)return alert("Invalid owner");
+  role="owner";
+  log("Owner logged in");
+  go("ownerPanel");
+  renderApps(ownerApps,false);
+  auditOwner.innerHTML=db.get("audit").join("<br>");
+}
+
+/* APPLICATIONS */
+function renderApps(el,admin){
+  el.innerHTML="";
+  db.get("applications").forEach((a,i)=>{
+    el.innerHTML+=`
+      <div class="app-card">
+        <b>${a.user}</b>
+        <span class="badge ${a.status}">${a.status}</span>
+        ${a.answers.map(x=>`<div>${x.q}: ${x.a}</div>`).join("")}
+        ${admin?`<button onclick="setStatus(${i},'Approved')">Approve</button>
+        <button onclick="setStatus(${i},'Rejected')">Reject</button>`:""}
+      </div>`;
+  });
+}
+function setStatus(i,s){
+  const a=db.get("applications");
+  a[i].status=s;
+  db.set("applications",a);
+  log("Application "+s+" by admin");
+  renderAdmin();
+}
+
+/* EXPORT */
+function exportApps(){
+  const data=JSON.stringify(db.get("applications"),null,2);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  a.download="applications.json";
+  a.click();
+}
+
+/* HIDDEN LOGINS */
+document.addEventListener("keydown",e=>{
+  if(e.altKey && e.key==="a") go("adminLogin");
+  if(e.altKey && e.key==="o") go("ownerLogin");
+});
+</script>
+</body>
+</html>
