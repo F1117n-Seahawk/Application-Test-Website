@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Application Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+<style>
+:root{
+  --bg:#020617; --card:#0f172a; --panel:#020617; --text:#e5e7eb; 
+  --border:#1e293b; --accent:#6366f1; --accent2:#8b5cf6;
+}
+body.light{
+  --bg:#f8fafc; --card:#fff; --panel:#f1f5f9; --text:#0f172a; 
+  --border:#e2e8f0; --accent:#4f46e5; --accent2:#6366f1;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;font-family:'Segoe UI',system-ui;background:var(--bg);
+  color:var(--text);min-height:100vh;transition:background .6s,color .6s;
+  overflow-x:hidden;
+}
+.view{
+  min-height:100vh;display:none;justify-content:center;
+  align-items:flex-start;padding:40px 20px;
+}
+.view.active{display:flex;animation:fadeSlide .4s ease forwards;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+.card{
+  background:var(--card);padding:28px;border-radius:22px;width:100%;
+  max-width:760px;box-shadow:0 40px 90px rgba(0,0,0,.25);
+  display:flex;flex-direction:column;gap:18px;transition:background .6s,transform .3s,box-shadow .3s;
+  animation:breathe 6s ease-in-out infinite;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 50px 100px rgba(0,0,0,.35);}
+
+input,select,textarea,button{padding:12px 14px;border-radius:12px;border:none;font-size:14px;transition:all .3s;}
+input,select,textarea{background:var(--panel);color:var(--text);box-shadow:inset 0 0 0 1px var(--border);}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 2px var(--accent);}
+
+button{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-weight:600;cursor:pointer;animation:breathe 5s ease-in-out infinite;}
+button:hover{filter:brightness(1.1);}
+button.secondary{background:var(--panel);color:var(--text);box-shadow:inset 0 0 0 1px var(--border);}
+
+.app-card{background:var(--panel);padding:14px 16px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,.2);transition:all .3s;margin-bottom:12px;animation:breathe 8s ease-in-out infinite;}
+.app-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.25);}
+
+.badge-status{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:600;transition:all .3s ease;animation:breathe 5s ease-in-out infinite;}
+.badge-Approved{background:#10b981;color:white;animation:pop 0.3s;}
+.badge-Rejected{background:#ef4444;color:white;animation:pop 0.3s;}
+.badge-Pending{background:#f59e0b;color:white;animation:pop 0.3s;}
+
+@keyframes pop{0%{transform:scale(0.7);}50%{transform:scale(1.2);}100%{transform:scale(1);}}
+@keyframes breathe{0%{transform:scale(1);}50%{transform:scale(1.03);}100%{transform:scale(1);}}
+
+.audit{background:var(--panel);padding:12px;border-radius:12px;max-height:200px;overflow:auto;font-size:13px;box-shadow:inset 0 0 0 1px var(--border);}
+.loader{width:22px;height:22px;border:3px solid #fff4;border-top-color:white;border-radius:50%;animation:spin 1s linear infinite;margin:auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.theme-toggle{position:fixed;top:20px;right:20px;width:56px;height:28px;border-radius:999px;background:var(--panel);box-shadow:inset 0 0 0 1px var(--border);cursor:pointer;padding:4px;display:flex;align-items:center;z-index:999;}
+.theme-knob{width:20px;height:20px;border-radius:50%;background:var(--accent);transition:transform .5s;}
+body.light .theme-knob{transform:translateX(28px);}
+
+.action-btn{display:inline-flex;align-items:center;gap:6px;font-weight:600;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;transition:transform .15s ease,filter .3s;animation:breathe 6s ease-in-out infinite;}
+.action-btn:hover{transform:scale(1.05);}
+.action-btn:active{transform:scale(0.95);}
+.approve{background:#10b981;color:white;}
+.reject{background:#ef4444;color:white;}
+.delete{background:#f59e0b;color:white;}
+</style>
+</head>
+<body>
+
+<div class="theme-toggle" onclick="toggleTheme()"><div class="theme-knob"></div></div>
+
+<!-- HOME -->
+<div id="home" class="view active">
+  <div class="card">
+    <h2>Application Portal</h2>
+    <button onclick="go('userLogin')">User Login</button>
+    <div style="margin-top:12px;font-size:13px;color:#888;">Admin: ALT+A · Owner: ALT+O</div>
+  </div>
+</div>
+
+<!-- USER LOGIN -->
+<div id="userLogin" class="view">
+  <div class="card">
+    <h3>User Login</h3>
+    <input id="userEmail" placeholder="Email">
+    <button onclick="fakeLogin(userLogin)">Login</button>
+    <button class="secondary" onclick="go('home')">Back</button>
+  </div>
+</div>
+
+<!-- USER PANEL -->
+<div id="userPanel" class="view">
+  <div class="card">
+    <h3>Application</h3>
+    <div id="userQuestions"></div>
+    <button onclick="submitApp()">Submit</button>
+    <button class="secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="view">
+  <div class="card">
+    <h3>Admin Login</h3>
+    <input id="adminEmail" placeholder="Email">
+    <input id="adminPass" type="password">
+    <button onclick="fakeLogin(adminLogin)">Login</button>
+    <button class="secondary" onclick="go('home')">Back</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="view">
+  <div class="card">
+    <h3>Admin Panel</h3>
+    <input id="qText" placeholder="Question text">
+    <select id="qType">
+      <option value="text">Text</option>
+      <option value="textarea">Textarea</option>
+      <option value="checkbox">Checkbox</option>
+      <option value="select">Dropdown</option>
+      <option value="file">File Upload</option>
+    </select>
+    <input id="qOptions" placeholder="Options (comma separated)">
+    <label><input type="checkbox" id="qRequired"> Required</label>
+    <button onclick="addQuestion()">Add Question</button>
+
+    <hr><h3>Questions</h3><div id="adminQuestions"></div>
+
+    <hr><h3>Applications</h3><button onclick="exportApps()">Export</button>
+    <div id="applications"></div>
+
+    <hr><h3>Audit Log</h3><div id="audit" class="audit"></div>
+
+    <button class="secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<!-- OWNER LOGIN -->
+<div id="ownerLogin" class="view">
+  <div class="card">
+    <h3>Owner Login</h3>
+    <input id="ownerEmail">
+    <input id="ownerPass" type="password">
+    <button onclick="fakeLogin(ownerLogin)">Login</button>
+    <button class="secondary" onclick="go('home')">Back</button>
+  </div>
+</div>
+
+<!-- OWNER PANEL -->
+<div id="ownerPanel" class="view">
+  <div class="card">
+    <h3>Applications</h3>
+    <button onclick="exportApps()">Export</button>
+    <div id="ownerApps"></div>
+    <div id="auditOwner" class="audit"></div>
+    <button class="secondary" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<script>
+/* ===== STORAGE INIT ===== */
+const db={get:k=>JSON.parse(localStorage.getItem(k)),set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+if(!db.get("questions"))db.set("questions",[]);
+if(!db.get("applications"))db.set("applications",[]);
+if(!db.get("audit"))db.set("audit",[]);
+if(!db.get("admins") || db.get("admins").length===0) db.set("admins",[{"email":"admin@example.com","pass":"admin123"}]);
+if(!db.get("owner")) db.set("owner",{email:"owner@example.com","pass":"owner123"});
+let currentUser="",role="";
+
+/* ===== NAVIGATION ===== */
+function go(id){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));const view=document.getElementById(id);view.classList.add("active");gsap.fromTo(view.querySelector(".card"),{opacity:0,y:20},{opacity:1,y:0,duration:.3});}
+
+/* ===== THEME ===== */
+if(localStorage.theme==="light") document.body.classList.add("light");
+function toggleTheme(){document.body.classList.toggle("light");localStorage.theme=document.body.classList.contains("light")?"light":"dark";gsap.fromTo(".card",{x:0},{x:20,yoyo:true,repeat:1,duration:.15});}
+
+/* ===== FAKE LOGIN LOADER ===== */
+function fakeLogin(fn){const btn=event.target;btn.disabled=true;const oldHTML=btn.innerHTML;btn.innerHTML='<div class="loader"></div>';setTimeout(()=>{try{fn();}catch(e){alert(e.message);}btn.disabled=false;btn.innerHTML=oldHTML;},900);}
+
+/* ===== AUDIT ===== */
+function log(msg){const a=db.get("audit");a.unshift(new Date().toLocaleTimeString()+" — "+msg);db.set("audit",a);}
+
+/* ===== LOGOUT ===== */
+function logout(){currentUser="";role="";db.set("session",null);go("home");renderUser();refreshApplications();log("Logged out");}
+
+/* ===== USER ===== */
+function userLogin(){currentUser=userEmail.value;role="user";log("User logged in: "+currentUser);go("userPanel");renderUser();}
+function renderUser(){const qs=db.get("questions");const container=userQuestions;container.innerHTML="";qs.forEach((q,i)=>{let field="";if(q.type==="textarea") field=`<textarea id="a${i}"></textarea>`; else if(q.type==="checkbox") field=q.options.map(o=>`<label><input type="checkbox" value="${o}" id="a${i}_${o}"> ${o}</label>`).join("<br>"); else if(q.type==="select") field=`<select id="a${i}">${q.options.map(o=>`<option>${o}</option>`).join("")}</select>`; else if(q.type==="file") field=`<input type="file" id="a${i}">`; else field=`<input id="a${i}">`; container.innerHTML+=`<div class="app-card"><b>${q.text}${q.required?" *":""}</b>${field}</div>`;});}
+function submitApp(){const qs=db.get("questions");const answers=[];for(let i=0;i<qs.length;i++){const q=qs[i];let val;if(q.type==="textarea"||q.type==="text") val=document.getElementById("a"+i).value; else if(q.type==="select") val=document.getElementById("a"+i).value; else if(q.type==="checkbox") val=q.options.map(o=>document.getElementById(`a${i}_${o}`)?.checked?o:null).filter(Boolean); else if(q.type==="file") val=document.getElementById("a"+i).files[0]?.name||""; if(q.required && (!val || (Array.isArray(val)&&val.length===0))) return alert(`Required: ${q.text}`); answers.push({q:q.text,a:val});} const apps=db.get("applications");apps.push({user:currentUser,answers,status:"Pending"});db.set("applications",apps);log(`Application submitted by ${currentUser}`);alert("Application submitted!");renderUser();refreshApplications();}
+
+/* ===== ADMIN ===== */
+function adminLogin(){const email=document.getElementById("adminEmail").value;const pass=document.getElementById("adminPass").value;const ok=db.get("admins").find(a=>a.email===email&&a.pass===pass);if(!ok) return alert("Invalid admin");role="admin";currentUser=email;log("Admin logged in: "+currentUser);go("adminPanel");renderAdmin();}
+function renderAdmin(){renderAdminQuestions();refreshApplications();audit.innerHTML=db.get("audit").join("<br>");}
+function addQuestion(){const text=qText.value.trim();const type=qType.value;const options=qOptions.value.split(",").map(o=>o.trim()).filter(Boolean);const required=qRequired.checked;if(!text) return alert("Question text required");const qs=db.get("questions");qs.push({text,type,options,required});db.set("questions",qs);qText.value="";qOptions.value="";qRequired.checked=false;renderAdminQuestions();log(`Question added: ${text}`);}
+function renderAdminQuestions(){const container=adminQuestions;container.innerHTML="";const qs=db.get("questions");qs.forEach((q,i)=>{container.innerHTML+=`<div class="app-card"><b>${q.text} (${q.type}${q.required?"*":""})</b><div style="margin-top:4px"><button class="action-btn delete" onclick="deleteQuestion(${i})">🗑 Delete</button></div></div>`;});}
+function deleteQuestion(i){const qs=db.get("questions");log(`Question deleted: ${qs[i].text}`);qs.splice(i,1);db.set("questions",qs);renderAdminQuestions();}
+
+/* ===== OWNER ===== */
+function ownerLogin(){const email=document.getElementById("ownerEmail").value;const pass=document.getElementById("ownerPass").value;const o=db.get("owner");if(email!==o.email||pass!==o.pass) return alert("Invalid owner");role="owner";currentUser=email;log("Owner logged in");go("ownerPanel");refreshApplications();}
+
+/* ===== APPLICATION ACTIONS ===== */
+function refreshApplications(){const apps=db.get("applications");
+if(document.getElementById("applications")){
+  const container=document.getElementById("applications");container.innerHTML="";
+  apps.forEach((a,i)=>{container.innerHTML+=`<div class="app-card"><b>${a.user}</b> <span class="badge-status badge-${a.status}">${a.status}</span>${a.answers.map(x=>`<div>${x.q}: ${Array.isArray(x.a)?x.a.join(", "):x.a}</div>`).join("")}<div style="margin-top:8px"><button class="action-btn approve" onclick="approveApp(${i})">✅ Approve</button><button class="action-btn reject" onclick="rejectApp(${i})">❌ Reject</button><button class="action-btn delete" onclick="deleteApp(${i})">🗑 Delete</button></div></div>`;});}
+if(document.getElementById("ownerApps")){
+  const container=document.getElementById("ownerApps");container.innerHTML="";
+  apps.forEach((a,i)=>{container.innerHTML+=`<div class="app-card"><b>${a.user}</b> <span class="badge-status badge-${a.status}">${a.status}</span>${a.answers.map(x=>`<div>${x.q}: ${Array.isArray(x.a)?x.a.join(", "):x.a}</div>`).join("")}<div style="margin-top:8px"><button class="action-btn delete" onclick="deleteApp(${i})">🗑 Delete</button></div></div>`;});}
+if(document.getElementById("audit")) document.getElementById("audit").innerHTML=db.get("audit").join("<br>");
+if(document.getElementById("auditOwner")) document.getElementById("auditOwner").innerHTML=db.get("audit").join("<br>");
+}
+function approveApp(i){const apps=db.get("applications");apps[i].status="Approved";db.set("applications",apps);log(`Application approved: ${apps[i].user}`);refreshApplications();}
+function rejectApp(i){const apps=db.get("applications");apps[i].status="Rejected";db.set("applications",apps);log(`Application rejected: ${apps[i].user}`);refreshApplications();}
+function deleteApp(i){const apps=db.get("applications");log(`Application deleted: ${apps[i].user}`);apps.splice(i,1);db.set("applications",apps);refreshApplications();}
+function exportApps(){const data=JSON.stringify(db.get("applications"),null,2);const a=document.createElement("a");
